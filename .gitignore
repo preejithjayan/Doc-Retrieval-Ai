@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.sqlite3
+*.log
+node_modules/
+frontend/dist/
+backend/staticfiles/
+backend/chroma/
+.env
+backend/.env
+frontend/.env
+.DS_Store
+ai
+data

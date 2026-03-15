@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: doc_retrieval
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  backend:
+    build:
+      context: ./backend
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    env_file:
+      - ./backend/.env
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./backend:/app
+      - backend_media:/app/media
+      - chroma_data:/app/chroma
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - backend_media:/app/media
+      - chroma_data:/app/chroma
+    depends_on:
+      - backend
+      - redis
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000/api
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_media:
+  chroma_data:
